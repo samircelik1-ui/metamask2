@@ -39,15 +39,17 @@ export default async function handler(req, res) {
 
     const telegramData = await telegramResponse.json();
 
-    if (!telegramResponse.ok || !telegramData.ok) {
-      return res.status(502).json({
-        error: "Telegram non ha accettato il messaggio"
-      });
-    }
+if (!telegramResponse.ok || !telegramData.ok) {
+  console.error("Telegram error:", {
+    status: telegramResponse.status,
+    response: telegramData
+  });
 
-    return res.status(200).json({
-      success: true
-    });
+  return res.status(502).json({
+    error: "Telegram error",
+    details: telegramData.description || "Errore sconosciuto"
+  });
+}
 
   } catch (error) {
     console.error(error);
