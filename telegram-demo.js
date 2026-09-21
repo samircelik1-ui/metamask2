@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       console.log("Testo demo inviato:", data);
-      alert("Testo demo inviato correttamente.");
+      
 
     } catch (error) {
       console.error(error);
