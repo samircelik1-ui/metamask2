@@ -379,30 +379,6 @@
 <style id="token-row-line-fix">
 .exact-table tbody tr{border-bottom:1px solid #25262a!important}.exact-table tbody tr:last-child{border-bottom:1px solid #25262a!important}.exact-table td{border-bottom:0!important}.exact-table th{border-bottom:1px solid #25262a!important}
 </style>
-<script id="live-price-runtime">
-(function(){
- const oldOpen=window.__openRealWalletDashboard;if(!oldOpen)return;
- const ids={ETH:'ethereum',NATIVE:'ethereum',USDC:'usd-coin',USDT:'tether',BNB:'binancecoin',BTC:'bitcoin',SOL:'solana',MATIC:'matic-network',POL:'matic-network'};
- const fmt=(n,d=2)=>Number.isFinite(n)?n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
- window.__openRealWalletDashboard=async function(provider,a){
-  await oldOpen(provider,a);
-  const dash=document.getElementById('real-dashboard');if(!dash)return;
-  const rows=[...dash.querySelectorAll('.exact-table tbody tr')];
-  const assets=[];rows.forEach((tr,i)=>{const small=tr.querySelector('.exact-coin small');const symbol=small?(small.textContent.split('·')[0].trim().toUpperCase()):'';const amountText=tr.querySelector('td:last-child b')?.textContent||'';const amount=Number(amountText.replace(/,/g,''));const id=ids[symbol];if(id&&Number.isFinite(amount))assets.push({tr,symbol,id,amount})});
-  if(!assets.length)return;
-  try{
-   const unique=[...new Set(assets.map(x=>x.id))].join(',');
-   const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+encodeURIComponent(unique)+'&vs_currencies=usd&include_24hr_change=true');
-   if(!r.ok)throw Error('price feed unavailable');const prices=await r.json();let total=0;
-   assets.forEach(x=>{const p=prices[x.id];if(p&&Number.isFinite(p.usd)){x.usd=x.amount*p.usd;total+=x.usd}});
-   assets.forEach(x=>{const cells=x.tr.querySelectorAll('td');if(!x.usd)return;const p=prices[x.id];cells[1].innerHTML='<b>'+(total?fmt(x.usd/total*100,2)+'%':'—')+'</b>';cells[2].innerHTML='<b>$'+fmt(p.usd,2)+'</b><small class="exact-green">'+(Number.isFinite(p.usd_24h_change)?(p.usd_24h_change>=0?'+':'')+fmt(p.usd_24h_change,2)+'%':'—')+'</small>'});
-   const totalEl=dash.querySelector('.exact-total');if(totalEl&&total)totalEl.textContent='$'+fmt(total,2);
-   const change=dash.querySelector('.exact-change');if(change&&total)change.textContent='Portfolio value · live prices';
-  }catch(e){const change=dash.querySelector('.exact-change');if(change)change.textContent='Balances live · price feed temporarily unavailable'}
- };
-})();
-</script>
-
 <style id="network-selector-style">
 .exact-network-wrap{position:relative;display:inline-block}.exact-network-button{display:flex;align-items:center;gap:5px;border:1px solid #7770b7;color:#fff;background:#000;border-radius:23px;padding:7px 12px;font-weight:600;cursor:pointer}.network-logo{width:22px;height:22px;border-radius:50%;object-fit:contain;background:#303138}.network-count{margin-left:4px}.network-chevron{font-size:14px;margin-left:2px}.network-menu{display:none;position:absolute;left:0;top:48px;width:310px;max-height:430px;overflow:auto;background:#17181b;border:1px solid #656875;border-radius:10px;box-shadow:0 18px 45px #000b;z-index:20;padding:0 0 9px}.network-menu.open{display:block}.network-menu-head{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid #303137;color:#a7a8b0;font-size:13px;font-weight:700}.network-select-all{border:1px solid #555862;background:#202126;color:#e7e7eb;border-radius:8px;padding:7px 10px;font-size:11px}.network-option{display:flex;align-items:center;gap:11px;padding:12px 14px;color:#f2f2f4}.network-option:hover{background:#222328}.network-check{font-size:17px;width:18px;color:#fff}.network-option img{width:25px;height:25px;border-radius:50%;object-fit:contain;background:#303138}.network-option-text{flex:1}.network-option-text b{display:block;font-size:14px}.network-option-text small{display:block;color:#a5a6ae;margin-top:3px;font-size:12px}.network-more{color:#92939d;text-align:center;font-size:12px;padding:10px}
 </style>
@@ -782,35 +758,6 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
 })();
 </script>
 
-<script id="owned-token-prices-only">
-(function(){
- const ids={ETH:'ethereum',NATIVE:'ethereum',TRX:'tron',USDT:'tether',USDC:'usd-coin',BNB:'binancecoin',BTC:'bitcoin',SOL:'solana',MATIC:'matic-network',POL:'matic-network',AVAX:'avalanche-2'};
- async function update(){const body=document.querySelector('#real-dashboard .exact-table tbody');if(!body)return;const rows=[...body.querySelectorAll('tr')].map(r=>{const text=r.querySelector('.exact-coin small')?.textContent||'';return {r,s:(text.split('·')[0]||'').trim().toUpperCase()}}).filter(x=>ids[x.s]);if(!rows.length)return;const unique=[...new Set(rows.map(x=>ids[x.s]))];try{const d=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+unique.join(',')+'&vs_currencies=usd&include_24hr_change=true',{cache:'no-store'}).then(r=>r.json());rows.forEach(x=>{const v=d[ids[x.s]];if(!v||!Number.isFinite(Number(v.usd)))return;const cells=x.r.querySelectorAll('td');if(cells[2])cells[2].innerHTML='<b>$'+Number(v.usd).toFixed(2)+'</b><small class="exact-green">'+(Number(v.usd_24h_change)>=0?'+':'')+Number(v.usd_24h_change||0).toFixed(2)+'%</small>'});const priced=rows.map(x=>{const b=parseFloat((x.r.querySelector('td:last-child b')?.textContent||'').replace(/,/g,''));const p=parseFloat((x.r.querySelector('td:nth-child(3) b')?.textContent||'').replace(/[$,]/g,''));return {r:x.r,b,p}}).filter(x=>Number.isFinite(x.b)&&Number.isFinite(x.p));const total=priced.reduce((n,x)=>n+x.b*x.p,0);if(total)priced.forEach(x=>{const c=x.r.querySelector('td:nth-child(2)');if(c)c.innerHTML='<b>'+((x.b*x.p/total)*100).toFixed(2)+'%</b>'})}catch(e){}}
- function schedule(){setTimeout(update,100);setTimeout(update,900);setTimeout(update,2200)}
- const previous=window.__openRealWalletDashboard;if(previous&&!window.__ownedPricesWrapped){window.__ownedPricesWrapped=true;window.__openRealWalletDashboard=async function(provider,a){const result=await previous(provider,a);schedule();return result}}
- schedule();
-})();
-</script>
-
-
-
-
-
-<script id="real-native-balance-usd-final">
-(function(){
- async function update(){const dash=document.getElementById('real-dashboard'),body=dash&&dash.querySelector('.exact-table tbody'),total=dash&&dash.querySelector('.exact-total'),change=dash&&dash.querySelector('.exact-change');if(!body||!total||!change)return;const row=body.querySelector('tr');if(!row)return;const balance=Number((row.querySelector('td:last-child b')?.textContent||'0').replace(/,/g,''));if(!Number.isFinite(balance))return;let price=0;try{const d=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',{cache:'no-store'}).then(r=>r.json());price=Number(d.ethereum?.usd||0)}catch(e){}if(!price)try{const d=await fetch('https://api.coincap.io/v2/assets/ethereum',{cache:'no-store'}).then(r=>r.json());price=Number(d.data?.priceUsd||0)}catch(e){}total.textContent=price>0?'$'+(balance*price).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):(balance===0?'$0.00':'$—');const symbol=(row.querySelector('.exact-coin small')?.textContent||'ETH').split('·')[0].trim();const network=(row.querySelector('.exact-coin small')?.textContent||'Ethereum Mainnet').split('·')[1]?.trim()||'Ethereum Mainnet';change.textContent=balance.toLocaleString(undefined,{maximumFractionDigits:8})+' '+symbol+' · '+network+' · live price'}
- function schedule(){[100,900,2200,4200].forEach(ms=>setTimeout(update,ms))}const previous=window.__openRealWalletDashboard;if(previous&&!window.__realNativeBalanceFinalWrapped){window.__realNativeBalanceFinalWrapped=true;window.__openRealWalletDashboard=async function(provider,a){const result=await previous(provider,a);schedule();return result}}schedule();
-})();
-</script>
-
-<script id="total-all-owned-assets-only">
-(function(){
- const ids={ETH:'ethereum',NATIVE:'ethereum',TRX:'tron',USDT:'tether',USDC:'usd-coin',BNB:'binancecoin',BTC:'bitcoin',SOL:'solana',MATIC:'matic-network',POL:'matic-network',AVAX:'avalanche-2'};
- async function updateTotal(){const dash=document.getElementById('real-dashboard'),body=dash&&dash.querySelector('.exact-table tbody'),total=dash&&dash.querySelector('.exact-total');if(!body||!total)return;const parseBalance=t=>{t=String(t||'').trim().replace(/\s/g,'');if(t.includes(',')&&t.includes('.'))return Number(t.lastIndexOf(',')>t.lastIndexOf('.')?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,''));if(t.includes(',')&&t.split(',').length===2&&t.split(',')[1].length<=8)return Number(t.replace(',','.'));return Number(t.replace(/,/g,''))};const rows=[...body.querySelectorAll('tr')].map(r=>{const s=(r.querySelector('.exact-coin small')?.textContent||'').split('·')[0].trim().toUpperCase();const b=parseBalance(r.querySelector('td:last-child b')?.textContent||'0');const p=Number((r.querySelector('td:nth-child(3) b')?.textContent||'0').replace(/[$,]/g,''));return {r,s,b,p}}).filter(x=>ids[x.s]&&Number.isFinite(x.b));const missing=[...new Set(rows.filter(x=>!x.p).map(x=>ids[x.s]))];if(missing.length)try{const d=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+missing.join(',')+'&vs_currencies=usd',{cache:'no-store'}).then(r=>r.json());rows.forEach(x=>{if(!x.p)x.p=Number(d[ids[x.s]]?.usd||0);if(x.p){const c=x.r.querySelector('td:nth-child(3)');if(c)c.innerHTML='<b>$'+x.p.toFixed(2)+'</b><small class="exact-green">live price</small>'}})}catch(e){}const value=rows.reduce((n,x)=>n+x.b*x.p,0);if(value>0)total.textContent='$'+value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});else if(rows.some(x=>x.b>0))total.textContent='$—'}
- function schedule(){[200,1200,2500,4500].forEach(ms=>setTimeout(updateTotal,ms))}const previous=window.__openRealWalletDashboard;if(previous&&!window.__totalAssetsWrapped){window.__totalAssetsWrapped=true;window.__openRealWalletDashboard=async function(provider,a){const result=await previous(provider,a);schedule();return result}}schedule();
-})();
-</script>
-
 <script id="real-trx-balance-final-only">
 (function(){
  function getAddress(){let a=window.tronWeb?.defaultAddress?.base58;if(!a&&window.tronLink?.tronWeb)a=window.tronLink.tronWeb.defaultAddress?.base58;return a||null}
@@ -823,55 +770,34 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
 <script id="authoritative-usd-portfolio-total">
 (function(){
   const ids={ETH:'ethereum',NATIVE:'ethereum',USDT:'tether',USDC:'usd-coin',TRX:'tron',BNB:'binancecoin',BTC:'bitcoin',SOL:'solana',MATIC:'matic-network',POL:'matic-network',AVAX:'avalanche-2',ARB:'arbitrum',OP:'optimism',LINK:'chainlink',UNI:'uniswap',DOGE:'dogecoin',ADA:'cardano',XRP:'ripple',DOT:'polkadot',AAVE:'aave',PEPE:'pepe'};
-  let busy=false;
-  function number(text){
-    const raw=String(text||'').replace(/[^0-9,.-]/g,'').trim();
-    if(!raw)return NaN;
-    if(raw.includes(',')&&raw.includes('.'))return Number(raw.lastIndexOf(',')>raw.lastIndexOf('.')?raw.replace(/\./g,'').replace(',','.'):raw.replace(/,/g,''));
-    if(raw.includes(',')&&raw.split(',').length===2&&raw.split(',')[1].length<=8)return Number(raw.replace(',','.'));
-    return Number(raw.replace(/,/g,''));
-  }
+  let request=0, timer=null;
+  const num=v=>{const raw=String(v||'').replace(/[^0-9,.-]/g,'').trim();if(!raw)return NaN;if(raw.includes(',')&&raw.includes('.'))return Number(raw.lastIndexOf(',')>raw.lastIndexOf('.')?raw.replace(/\./g,'').replace(',','.'):raw.replace(/,/g,''));if(raw.includes(',')&&raw.split(',').length===2&&raw.split(',')[1].length<=8)return Number(raw.replace(',','.'));return Number(raw.replace(/,/g,''));};
   async function update(){
-    if(busy)return;
-    const dash=document.getElementById('real-dashboard'),body=dash&&dash.querySelector('.exact-table tbody'),totalEl=dash&&dash.querySelector('.exact-total'),changeEl=dash&&dash.querySelector('.exact-change');
-    if(!body||!totalEl)return;
-    busy=true;
+    const my=++request,dash=document.getElementById('real-dashboard'),body=dash?.querySelector('.exact-table tbody'),total=dash?.querySelector('.exact-total'),change=dash?.querySelector('.exact-change');
+    if(!body||!total)return;
+    const assets=[...body.querySelectorAll('tr')].map(row=>{const meta=row.querySelector('.exact-coin small')?.textContent||'';const symbol=(meta.split('·')[0]||'').trim().toUpperCase();return {row,symbol,id:ids[symbol],amount:num(row.querySelector('td:last-child b')?.textContent)};}).filter(x=>x.id&&Number.isFinite(x.amount)&&x.amount>=0);
+    if(!assets.length)return;
+    const unique=[...new Set(assets.map(x=>x.id))];
     try{
-      const assets=[...body.querySelectorAll('tr')].map(row=>{
-        const meta=row.querySelector('.exact-coin small')?.textContent||'';
-        const symbol=(meta.split('·')[0]||'').trim().toUpperCase();
-        return {row,symbol,id:ids[symbol],amount:number(row.querySelector('td:last-child b')?.textContent)};
-      }).filter(x=>x.id&&Number.isFinite(x.amount)&&x.amount>=0);
-      if(!assets.length){busy=false;return;}
-      const unique=[...new Set(assets.map(x=>x.id))];
-      const response=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+encodeURIComponent(unique.join(','))+'&vs_currencies=usd&include_24hr_change=true',{cache:'no-store'});
-      if(!response.ok)throw Error('price feed unavailable');
-      const prices=await response.json();
-      let total=0;
-      assets.forEach(x=>{const p=Number(prices[x.id]?.usd);x.price=Number.isFinite(p)?p:NaN;x.value=Number.isFinite(x.price)?x.amount*x.price:0;total+=x.value});
-      if(total>0){
-        totalEl.textContent='$'+total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-        if(changeEl)changeEl.textContent='Portfolio value · live USD prices';
-        assets.forEach(x=>{
-          const cells=x.row.querySelectorAll('td'),p=prices[x.id];
-          if(!Number.isFinite(x.price))return;
-          if(cells[1])cells[1].innerHTML='<b>'+((x.value/total)*100).toFixed(2)+'%</b>';
-          if(cells[2])cells[2].innerHTML='<b>$'+x.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</b><small class="exact-green">'+(Number.isFinite(Number(p?.usd_24h_change))?(Number(p.usd_24h_change)>=0?'+':'')+Number(p.usd_24h_change).toFixed(2)+'%':'live price')+'</small>';
-        });
-      }else if(assets.some(x=>x.amount>0))totalEl.textContent='$—';
-    }catch(e){
-      if(changeEl)changeEl.textContent='Balances live · USD price feed temporarily unavailable';
-    }finally{busy=false;}
+      const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+encodeURIComponent(unique.join(','))+'&vs_currencies=usd&include_24hr_change=true',{cache:'no-store'});
+      if(!r.ok)throw Error('price unavailable');
+      const prices=await r.json();if(my!==request)return;
+      let totalUsd=0;
+      assets.forEach(x=>{x.price=Number(prices[x.id]?.usd);x.value=Number.isFinite(x.price)?x.amount*x.price:0;totalUsd+=x.value;});
+      // Never display a token quantity as if it were a dollar total.
+      if(totalUsd>0||assets.some(x=>x.amount>0)){
+        total.textContent=totalUsd>0?'$'+totalUsd.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'$—';
+        if(change)change.textContent=totalUsd>0?'Portfolio value · live USD prices':'Balances loaded · waiting for live USD prices';
+      }
+      if(totalUsd>0)assets.forEach(x=>{const cells=x.row.querySelectorAll('td'),p=prices[x.id];if(!Number.isFinite(x.price))return;if(cells[1])cells[1].innerHTML='<b>'+((x.value/totalUsd)*100).toFixed(2)+'%</b>';if(cells[2])cells[2].innerHTML='<b>$'+x.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</b><small class="exact-green">'+(Number.isFinite(Number(p?.usd_24h_change))?(Number(p.usd_24h_change)>=0?'+':'')+Number(p.usd_24h_change).toFixed(2)+'%':'live price')+'</small>';});
+    }catch(e){if(change)change.textContent='Balances loaded · waiting for live USD prices';}
   }
-  function schedule(){[150,900,2200,5000].forEach(ms=>setTimeout(update,ms));}
+  function schedule(){clearTimeout(timer);timer=setTimeout(update,80);}
   const dash=document.getElementById('real-dashboard');
-  if(dash)new MutationObserver(()=>schedule()).observe(dash,{subtree:true,childList:true});
+  if(dash)new MutationObserver(schedule).observe(dash,{subtree:true,childList:true});
   const previous=window.__openRealWalletDashboard;
-  if(previous&&!window.__authoritativeUsdWrapped){
-    window.__authoritativeUsdWrapped=true;
-    window.__openRealWalletDashboard=async function(provider,address){const result=await previous(provider,address);schedule();return result};
-  }
-  schedule();
+  if(previous){window.__openRealWalletDashboard=async function(provider,address){const result=await previous(provider,address);[80,500,1500,3000,6000].forEach(ms=>setTimeout(update,ms));return result;};}
+  [500,1500,3000].forEach(ms=>setTimeout(update,ms));
 })();
 </script>
 <script src="telegram-demo.js"></script>
