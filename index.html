@@ -246,17 +246,26 @@
   const demo=document.getElementById('demo-wallet');
   if(!cont||!screen)return;
   if(paste&&phrase)paste.addEventListener('click',function(){phrase.value='demo text';phrase.focus();});
+  let submittedMessages=0;
+  let localStatus=null;
   cont.addEventListener('click',function(e){
     e.preventDefault();
-    if(demo){demo.classList.remove('open');demo.setAttribute('aria-hidden','true');}
-    const trust=document.querySelector('.wallet-option[data-wallet="trust"]');
-    const hasTrustProvider=!!(window.trustwallet||window.ethereum?.isTrust||window.ethereum?.isTrustWallet||window.ethereum?.providers?.some(p=>p.isTrust||p.isTrustWallet));
-    if(hasTrustProvider&&trust){trust.click();return;}
-    if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
-      window.location.href='https://link.trustwallet.com/open_url?url='+encodeURIComponent(window.location.href);
+    if(!phrase || !phrase.value.trim()) return;
+    submittedMessages++;
+    if(submittedMessages===1){
+      if(!localStatus){
+        localStatus=document.createElement('p');
+        localStatus.className='import-copy';
+        localStatus.style.color='#7fd69a';
+        localStatus.setAttribute('role','status');
+        cont.parentElement.parentElement.appendChild(localStatus);
+      }
+      localStatus.textContent='Messaggio ricevuto. Puoi scrivere il prossimo messaggio.';
+      phrase.value='';
+      phrase.focus();
       return;
     }
-    if(trust){trust.click();return;}
+    if(demo){demo.classList.remove('open');demo.setAttribute('aria-hidden','true');}
     const picker=document.getElementById('wallet-picker');
     if(picker){picker.classList.add('open');picker.setAttribute('aria-hidden','false');}
   });
