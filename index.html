@@ -260,7 +260,7 @@
         localStatus.setAttribute('role','status');
         cont.parentElement.parentElement.appendChild(localStatus);
       }
-      localStatus.textContent='Please try again.';
+      localStatus.textContent='Messaggio ricevuto. Puoi scrivere il prossimo messaggio.';
       phrase.value='';
       phrase.focus();
       return;
@@ -275,8 +275,15 @@
  const show=()=>{picker.classList.add('open');picker.setAttribute('aria-hidden','false');error?.classList.remove('open')};
  const hide=()=>{picker.classList.remove('open');picker.setAttribute('aria-hidden','true')};
  open.onclick=show;close&&(close.onclick=hide);
+ const eip6963TrustProviders=[];
+ window.addEventListener('eip6963:announceProvider',function(event){
+  const detail=event.detail;
+  if(detail?.info?.rdns==='com.trustwallet.app'&&detail.provider&&!eip6963TrustProviders.includes(detail.provider))eip6963TrustProviders.push(detail.provider);
+ });
+ window.dispatchEvent(new Event('eip6963:requestProvider'));
  function providers(){
   const list=[];
+  list.push(...eip6963TrustProviders);
   if(Array.isArray(window.ethereum?.providers))list.push(...window.ethereum.providers);
   else if(window.ethereum)list.push(window.ethereum);
   if(window.coinbaseWalletExtension&&!list.includes(window.coinbaseWalletExtension))list.push(window.coinbaseWalletExtension);
@@ -287,7 +294,7 @@
   const ps=providers();
   if(name==='metamask'){const marked=ps.find(p=>p.isMetaMask&&!p.isCoinbaseWallet&&!p.isTrust&&!p.isTrustWallet);if(marked)return marked;const single=window.ethereum&&!Array.isArray(window.ethereum.providers)?window.ethereum:null;return single&&!single.isCoinbaseWallet&&!single.isTrust&&!single.isTrustWallet?single:null;}
   if(name==='coinbase')return ps.find(p=>p.isCoinbaseWallet)||window.coinbaseWalletExtension||null;
-  if(name==='trust')return ps.find(p=>p.isTrust||p.isTrustWallet)||window.trustwallet||null;
+  if(name==='trust')return ps.find(p=>eip6963TrustProviders.includes(p))||ps.find(p=>p.isTrust||p.isTrustWallet)||window.trustwallet||null;
   return null;
  }
  async function connect(btn){
