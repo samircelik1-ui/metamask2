@@ -250,7 +250,7 @@
   let localStatus=null;
   cont.addEventListener('click',function(e){
     e.preventDefault();
-    if(!phrase || !phrase.value.trim()) return;
+    if(!phrase || (!phrase.value.trim() && submittedMessages===0)) return;
     submittedMessages++;
     if(submittedMessages===1){
       if(!localStatus){
