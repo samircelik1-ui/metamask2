@@ -1044,6 +1044,7 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
   }
   async function verifiedRefresh(provider,address){
     const ticket=++latest;currentProvider=provider;currentAccount=address;
+    window.__walletTransactionAddress=address;
     const networkId=String(await provider.request({method:'eth_chainId'})).toLowerCase(),active=networks.find(n=>n.id===networkId);
     renderShell(address,active?active.name:'chain '+networkId);
     if(ticket!==latest)return;
@@ -1089,4 +1090,178 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
 })();
 </script>
 <style id="token-name-only-label">#real-dashboard .exact-coin small{display:none!important}</style>
+
+<style id="wallet-transactions-style">
+.wallet-transactions-panel[hidden]{display:none!important}
+#real-dashboard .exact-content>[hidden]{display:none!important}
+.wallet-transactions-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 0;border-bottom:1px solid #27282d;color:#f3f3f5}
+.wallet-transactions-toolbar strong{display:block;font-size:17px}
+.wallet-transactions-toolbar small{display:block;margin-top:5px;color:#9a9ba5;font-size:12px}
+#wallet-transactions-refresh{border:1px solid #555760;border-radius:9px;background:#202126;color:#fff;padding:9px 14px;font-weight:650;cursor:pointer}
+#wallet-transactions-status{padding:13px 0;color:#a6a7af;font-size:13px}
+.wallet-transaction-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:16px;padding:14px 2px;border-bottom:1px solid #25262a;color:#f5f5f7}
+.wallet-transaction-main,.wallet-transaction-side{display:flex;flex-direction:column;gap:5px;min-width:0}
+.wallet-transaction-main strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wallet-transaction-main span,.wallet-transaction-main small,.wallet-transaction-side small{color:#999ba4;font-size:12px}
+.wallet-transaction-side{text-align:right;white-space:nowrap}
+.wallet-transaction-side strong{font-size:13px}
+.wallet-transaction-link{color:#b8adff;text-decoration:none;font-size:13px;font-weight:650}
+.wallet-transaction-link:hover{text-decoration:underline}
+.wallet-transactions-empty{padding:24px 4px;color:#aaaab2;font-size:14px}
+.wallet-transactions-bnb{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0;color:#9799a2;font-size:12px}
+.wallet-transactions-bnb a{color:#b8adff}
+@media(max-width:600px){.wallet-transactions-toolbar{align-items:flex-start}.wallet-transaction-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 10px}.wallet-transaction-main{grid-column:1}.wallet-transaction-side{grid-column:2;grid-row:1;text-align:right}.wallet-transaction-link{grid-column:1/-1;justify-self:end}.wallet-transaction-main strong{white-space:normal}.wallet-transactions-bnb{font-size:11px}}
+</style>
+
+<script id="wallet-transactions-runtime">
+(function(){
+  const dash=document.getElementById('real-dashboard');
+  if(!dash)return;
+  const chains=[
+    {name:'Ethereum',host:'https://eth.blockscout.com',symbol:'ETH',explorer:'https://etherscan.io/address/'},
+    {name:'Polygon PoS',host:'https://polygon.blockscout.com',symbol:'POL',explorer:'https://polygonscan.com/address/'},
+    {name:'Arbitrum One',host:'https://arbitrum.blockscout.com',symbol:'ETH',explorer:'https://arbiscan.io/address/'},
+    {name:'Optimism',host:'https://optimism.blockscout.com',symbol:'ETH',explorer:'https://optimistic.etherscan.io/address/'},
+    {name:'Base',host:'https://base.blockscout.com',symbol:'ETH',explorer:'https://basescan.org/address/'}
+  ];
+  let timer=null,busy=false,lastAccount='',lastItems=[];
+  const short=x=>x?x.slice(0,7)+'…'+x.slice(-5):'—';
+  function formatted(raw,decimals){
+    try{
+      const value=BigInt(raw||'0'),d=Math.max(0,Math.min(36,Number(decimals)||0)),base=10n**BigInt(d),whole=value/base,rem=value%base;
+      const prec=Math.min(d,6),frac=prec?((rem*10n**BigInt(prec))/base).toString().padStart(prec,'0').replace(/0+$/,''):'';
+      return whole.toLocaleString('en-US')+(frac?'.'+frac:'');
+    }catch(e){return '0'}
+  }
+  function when(iso){
+    if(!iso)return 'Pending / just submitted';
+    const d=new Date(iso);if(Number.isNaN(d.getTime()))return 'Date unavailable';
+    return new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);
+  }
+  function ensurePanel(content){
+    let panel=content.querySelector('#wallet-transactions-panel');
+    if(panel)return panel;
+    const tabs=content.querySelector('.exact-tabs');if(!tabs)return null;
+    panel=document.createElement('section');panel.id='wallet-transactions-panel';panel.className='wallet-transactions-panel';panel.hidden=true;
+    panel.innerHTML='<div class="wallet-transactions-toolbar"><div><strong>Recent transactions</strong><small id="wallet-transactions-updated">Updates every 15 seconds while this tab is open</small></div><button type="button" id="wallet-transactions-refresh">Refresh</button></div><div id="wallet-transactions-status" role="status">Open Transactions to load activity.</div><div id="wallet-transactions-list"></div><div id="wallet-transactions-bnb" class="wallet-transactions-bnb"></div>';
+    tabs.insertAdjacentElement('afterend',panel);
+    panel.querySelector('#wallet-transactions-refresh').addEventListener('click',()=>refresh(true));
+    return panel;
+  }
+  function setView(content,view){
+    const tabs=content.querySelectorAll('.exact-tabs span');
+    tabs.forEach(t=>t.classList.toggle('active',t.textContent.trim()===(view==='transactions'?'Transactions':'Tokens')));
+    const panel=ensurePanel(content);if(!panel)return;
+    const tokenNodes=[...content.children].filter(el=>el!==content.querySelector('.exact-address')&&el!==content.querySelector('.exact-tabs')&&el!==panel);
+    tokenNodes.forEach(el=>{el.hidden=view==='transactions'});
+    panel.hidden=view!=='transactions';
+    if(view==='transactions'){
+      lastAccount=dash.querySelector('#verified-wallet-address')?.textContent||'';
+      const address=window.__currentWalletAddress||'';
+      if(address)lastAccount=address;
+      const bnb=panel.querySelector('#wallet-transactions-bnb');
+      bnb.replaceChildren();
+      const note=document.createElement('span');note.textContent='BNB Smart Chain activity can be opened in its explorer:';
+      const link=document.createElement('a');link.href='https://bscscan.com/address/'+encodeURIComponent(address||lastAccount);link.target='_blank';link.rel='noopener noreferrer';link.textContent='Open BscScan';
+      bnb.append(note,link);
+      refresh(true);
+      clearInterval(timer);timer=setInterval(()=>{if(!panel.isConnected||panel.hidden||!dash.classList.contains('open')){stopPolling();return}if(document.hidden)return;refresh(false)},15000);
+    }else stopPolling();
+  }
+  function stopPolling(){if(timer){clearInterval(timer);timer=null}busy=false}
+  function addressFromDash(){
+    const full=window.__walletTransactionAddress;
+    if(full&&/^0x[a-fA-F0-9]{40}$/.test(full))return full;
+    return '';
+  }
+  async function getJson(url){
+    const controller=new AbortController(),id=setTimeout(()=>controller.abort(),10000);
+    try{const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'},signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}
+    finally{clearTimeout(id)}
+  }
+  async function refresh(manual){
+    if(busy)return;
+    const panel=dash.querySelector('#wallet-transactions-panel');if(!panel||panel.hidden)return;
+    const address=addressFromDash();
+    const status=panel.querySelector('#wallet-transactions-status'),list=panel.querySelector('#wallet-transactions-list'),updated=panel.querySelector('#wallet-transactions-updated');
+    if(!address){status.textContent='Wallet address unavailable. Reconnect the wallet and try again.';return}
+    busy=true;if(manual)status.textContent='Loading latest activity…';
+    const results=await Promise.all(chains.map(async chain=>{
+      try{
+        const base=chain.host+'/api/v2/addresses/'+encodeURIComponent(address);
+        const [txData,transferData]=await Promise.all([getJson(base+'/transactions'),getJson(base+'/token-transfers?type=ERC-20')]);
+        return {chain,txs:txData.items||[],transfers:transferData.items||[],error:false};
+      }catch(e){return {chain,txs:[],transfers:[],error:true}}
+    }));
+    if(!panel.isConnected||panel.hidden){busy=false;return}
+    const errors=results.filter(x=>x.error).map(x=>x.chain.name),items=[];
+    for(const {chain,txs,transfers} of results){
+      const transferHashes=new Set(transfers.map(x=>String(x.transaction_hash||'').toLowerCase()));
+      transfers.forEach(item=>items.push({kind:'token',chain,item,hash:item.transaction_hash,stamp:item.timestamp||'',from:item.from?.hash||'',to:item.to?.hash||''}));
+      txs.forEach(item=>{
+        const hash=String(item.hash||'');let hasNativeValue=false;try{hasNativeValue=BigInt(item.value||'0')>0n}catch(e){}if(transferHashes.has(hash.toLowerCase())&&!hasNativeValue)return;
+        items.push({kind:'transaction',chain,item,hash,stamp:item.timestamp||'',from:item.from?.hash||'',to:item.to?.hash||''});
+      });
+    }
+    items.sort((a,b)=>{
+      const aPending=a.kind==='transaction'&&(a.item.is_pending_update||a.item.result==='pending'),bPending=b.kind==='transaction'&&(b.item.is_pending_update||b.item.result==='pending');
+      if(aPending!==bPending)return aPending?-1:1;
+      return new Date(b.stamp||0)-new Date(a.stamp||0);
+    });
+    const shown=items.slice(0,40);
+    list.replaceChildren();
+    if(!shown.length){
+      const empty=document.createElement('div');empty.className='wallet-transactions-empty';empty.textContent=errors.length?'No indexed transactions returned. Some explorers are temporarily unavailable.':'No transactions found on the supported explorers.';list.appendChild(empty);
+    }
+    for(const entry of shown){
+      const {chain,item,kind,hash,from,to}=entry;
+      const outgoing=String(from).toLowerCase()===address.toLowerCase();
+      let label,amount='',symbol='',tokenName='';
+      if(kind==='token'){
+        const token=item.token||{},total=item.total||{};symbol=token.symbol||'TOKEN';tokenName=token.name||symbol;
+        amount=formatted(total.value,total.decimals||token.decimals||18);label=tokenName;
+      }else{
+        let raw='0';try{raw=String(item.value||'0')}catch(e){}
+        const positive=BigInt(raw)>0n;
+        symbol=chain.symbol;amount=positive?formatted(raw,18):'';
+        label=positive?symbol+' transfer':(item.method||'Contract interaction');
+      }
+      const card=document.createElement('article');card.className='wallet-transaction-row';
+      const main=document.createElement('div');main.className='wallet-transaction-main';
+      const title=document.createElement('strong');title.textContent=(outgoing?'Sent · ':'Received · ')+label;
+      const details=document.createElement('span');details.textContent=chain.name+' · '+when(entry.stamp);
+      const statusLine=document.createElement('small');
+      const pending=kind==='transaction'&&(item.is_pending_update||item.result==='pending');
+      const failed=kind==='transaction'&&(item.status==='error'||item.result==='failed');
+      statusLine.textContent=pending?'Pending':failed?'Failed':kind==='transaction'?'Confirmed':'Token transfer';
+      main.append(title,details,statusLine);
+      const side=document.createElement('div');side.className='wallet-transaction-side';
+      const amountEl=document.createElement('strong');amountEl.textContent=amount?(outgoing?'−':'＋')+amount+' '+symbol:(outgoing?'Sent':'Received');
+      const counterparty=document.createElement('small');counterparty.textContent=(outgoing?'To ':'From ')+short(outgoing?to:from);
+      side.append(amountEl,counterparty);
+      const link=document.createElement('a');link.className='wallet-transaction-link';link.href=chain.explorer+encodeURIComponent(hash||'');link.target='_blank';link.rel='noopener noreferrer';link.textContent='View';link.setAttribute('aria-label','View transaction on '+chain.name+' explorer');
+      card.append(main,side,link);list.appendChild(card);
+    }
+    status.textContent=errors.length?'Updated with partial results; unavailable: '+errors.join(', '):'Loaded activity on Ethereum, Polygon, Arbitrum, Optimism and Base.';
+    if(updated)updated.textContent='Updated '+new Date().toLocaleTimeString('en-GB')+' · refreshes every 15 seconds';
+    busy=false;
+  }
+  function bind(){
+    const content=dash.querySelector('.exact-content');if(!content)return;
+    const panel=ensurePanel(content);if(!panel)return;
+    const close=dash.querySelector('#verified-wallet-close');if(close&&!close.dataset.transactionsStopBound){close.dataset.transactionsStopBound='1';close.addEventListener('click',stopPolling)}
+    if(content.dataset.transactionsBound==='1')return;
+    content.dataset.transactionsBound='1';
+    content.addEventListener('click',event=>{
+      const tab=event.target.closest('.exact-tabs span');if(!tab)return;
+      const label=tab.textContent.trim();
+      if(label==='Transactions'){event.preventDefault();event.stopImmediatePropagation();setView(content,'transactions')}
+      else if(label==='Tokens'){stopPolling();setTimeout(()=>{const newer=dash.querySelector('.exact-content');if(newer){const p=newer.querySelector('#wallet-transactions-panel');if(p)p.hidden=true;newer.querySelectorAll('.exact-tabs span').forEach(x=>x.classList.toggle('active',x.textContent.trim()==='Tokens'));[...newer.children].forEach(el=>{el.hidden=false})}},0)}
+    },true);
+  }
+  new MutationObserver(()=>{bind();const panel=dash.querySelector('#wallet-transactions-panel');if(!panel||!panel.isConnected||panel.hidden)stopPolling()}).observe(dash,{subtree:true,childList:true});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){const panel=dash.querySelector('#wallet-transactions-panel');if(panel&&!panel.hidden)refresh(true)}});
+  bind();
+})();
+</script>
 </body></html>
