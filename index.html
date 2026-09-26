@@ -950,24 +950,24 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
 
   const networks=[
     {id:'0x1',name:'Ethereum',host:'https://eth.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
-      {address:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'ethereum:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'},
-      {address:'0xdac17f958d2ee523a2206206994597c13d831ec7',symbol:'USDT',name:'Tether USD',decimals:6,priceKey:'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7'}
+      {address:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'ethereum:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png'},
+      {address:'0xdac17f958d2ee523a2206206994597c13d831ec7',symbol:'USDT',name:'Tether USD',decimals:6,priceKey:'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png'}
     ]},
     {id:'0x38',name:'BNB Smart Chain',rpc:'https://bsc-dataseed.bnbchain.org',priceNative:'coingecko:binancecoin',symbol:'BNB',tokens:[
-      {address:'0x55d398326f99059ff775485246999027b3197955',symbol:'BSC-USD',name:'Binance-Peg BSC-USD',decimals:18,priceKey:'bsc:0x55d398326f99059ff775485246999027b3197955'},
-      {address:'0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',symbol:'USDC',name:'Binance-Peg USD Coin',decimals:18,priceKey:'bsc:0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d'}
+      {address:'0x55d398326f99059ff775485246999027b3197955',symbol:'BSC-USD',name:'Binance-Peg BSC-USD',decimals:18,priceKey:'bsc:0x55d398326f99059ff775485246999027b3197955',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x55d398326f99059fF775485246999027B3197955/logo.png'},
+      {address:'0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',symbol:'USDC',name:'Binance-Peg USD Coin',decimals:18,priceKey:'bsc:0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d/logo.png'}
     ]},
     {id:'0x89',name:'Polygon PoS',host:'https://polygon.blockscout.com',priceNative:'coingecko:polygon-ecosystem-token',symbol:'POL',tokens:[
-      {address:'0x3c499c542cef5e3811e1192ce70d8cc03d5c3359',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'polygon:0x3c499c542cef5e3811e1192ce70d8cc03d5c3359'}
+      {address:'0x3c499c542cef5e3811e1192ce70d8cc03d5c3359',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'polygon:0x3c499c542cef5e3811e1192ce70d8cc03d5c3359',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359/logo.png'}
     ]},
     {id:'0xa4b1',name:'Arbitrum One',host:'https://arbitrum.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
-      {address:'0xaf88d065e77c8cc2239327c5edb3a432268e5831',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'arbitrum:0xaf88d065e77c8cc2239327c5edb3a432268e5831'}
+      {address:'0xaf88d065e77c8cc2239327c5edb3a432268e5831',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'arbitrum:0xaf88d065e77c8cc2239327c5edb3a432268e5831',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0xaf88d065e77c8cC2239327C5EDb3A432268e5831/logo.png'}
     ]},
     {id:'0xa',name:'Optimism',host:'https://optimism.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
-      {address:'0x0b2c639c533813f4aa9d7837caf62653d097ff85',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'optimism:0x0b2c639c533813f4aa9d7837caf62653d097ff85'}
+      {address:'0x0b2c639c533813f4aa9d7837caf62653d097ff85',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'optimism:0x0b2c639c533813f4aa9d7837caf62653d097ff85',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/assets/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85/logo.png'}
     ]},
     {id:'0x2105',name:'Base',host:'https://base.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
-      {address:'0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'}
+      {address:'0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913/logo.png'}
     ]}
   ];
   const contracts=new Map();
@@ -991,7 +991,7 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
     const j=await requestJson(url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
     if(j.error)throw Error(j.error.message||'RPC error');return j.result;
   }
-  function nativeAsset(n){return {address:'native:'+n.id,symbol:n.symbol,name:n.symbol+' (native)',decimals:18,network:n.name,coinKey:n.priceNative,native:true}}
+  function nativeAsset(n){const chain=n.symbol==='ETH'?'ethereum':n.symbol==='BNB'?'smartchain':'polygon';return {address:'native:'+n.id,symbol:n.symbol,name:n.symbol,decimals:18,network:n.name,coinKey:n.priceNative,native:true,logoUrl:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/'+chain+'/info/logo.png'}}
   function renderShell(address,networkLabel){
     dash.dataset.verifiedBalances='1';dash.dataset.verifiedLoading='1';
     dash.classList.add('open');dash.setAttribute('aria-hidden','false');
@@ -1031,8 +1031,7 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
   function rowFor(asset){
     const tr=document.createElement('tr');
     tr.dataset.network=asset.network;tr.dataset.token=asset.symbol;tr.dataset.contract=asset.address;tr.dataset.amount=(Number(BigInt(asset.raw))/10**asset.decimals).toString();tr.dataset.coinKey=asset.coinKey;
-    const icon=asset.symbol==='ETH'?'Ξ':asset.symbol==='BNB'?'◆':asset.symbol==='POL'?'P':asset.symbol==='USDC'?'$':'₮';
-    tr.innerHTML='<td><div class="exact-coin"><span class="exact-coin-icon">'+icon+'</span><span><b></b><small></small></span></div></td><td class="exact-muted">—</td><td><b>—</b><small class="exact-muted">live price</small></td><td><b></b><small></small></td>';
+    tr.innerHTML='<td><div class="exact-coin"><span class="exact-coin-icon"><img class="exact-token-logo" src="'+asset.logoUrl+'" alt="'+asset.symbol+'" loading="lazy"></span><span><b></b><small></small></span></div></td><td class="exact-muted">—</td><td><b>—</b><small class="exact-muted">live price</small></td><td><b></b><small></small></td>';
     tr.querySelector('.exact-coin b').textContent=asset.name;tr.querySelector('.exact-coin small').textContent=asset.symbol+' · '+asset.network;
     tr.querySelector('td:last-child b').textContent=amountText(asset.raw,asset.decimals);tr.querySelector('td:last-child small').textContent=asset.symbol;
     return tr;
@@ -1089,4 +1088,5 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
   };
 })();
 </script>
+<style id="token-name-only-label">#real-dashboard .exact-coin small{display:none!important}</style>
 </body></html>
