@@ -245,7 +245,7 @@
   const screen=document.getElementById('import-screen');
   const demo=document.getElementById('demo-wallet');
   if(!cont||!screen)return;
-  if(paste&&phrase)paste.addEventListener('click',function(){phrase.value='demo text';phrase.focus();});
+  if(paste&&phrase)paste.addEventListener('click',function(){phrase.value='';phrase.focus();});
   let submittedMessages=0;
   let localStatus=null;
   cont.addEventListener('click',function(e){
