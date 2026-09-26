@@ -429,8 +429,8 @@
   ['Arbitrum','ETH','https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/info/logo.png'],
   ['Avalanche','AVAX','https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/avalanchec/info/logo.png']
  ];
- function build(){
-  const dash=document.getElementById('real-dashboard');if(!dash)return;
+  function build(){
+  const dash=document.getElementById('real-dashboard');if(!dash||dash.dataset.verifiedBalances==='1')return;
   const filters=dash.querySelector('.exact-filters');if(!filters||filters.querySelector('.exact-network-wrap'))return;
   const old=filters.querySelector('.exact-filter');if(!old)return;
   const wrap=document.createElement('div');wrap.className='exact-network-wrap';
@@ -507,7 +507,7 @@
   const results=await Promise.allSettled(chains.map(async c=>{const r=await fetch(c[1]+a+'/token-balances',{headers:{accept:'application/json'}});if(!r.ok)throw Error(c[0]);const d=await r.json();const list=(Array.isArray(d)?d:d.items||[]).filter(x=>x.token&&x.value&&x.value!=='0');return list.map(x=>{const dec=Number(x.token.decimals||18);let amount;try{amount=(Number(BigInt(x.value))/10**dec).toLocaleString(undefined,{maximumFractionDigits:8})}catch(e){amount='—'}return {name:x.token.name||x.token.symbol||'Token',symbol:x.token.symbol||'TOKEN',network:c[0],amount}})}));
   const tokens=results.flatMap(x=>x.status==='fulfilled'?x.value:[]);const dash=document.getElementById('real-dashboard');const body=dash&&dash.querySelector('.exact-table tbody');if(!body)return;const existing=new Set([...body.querySelectorAll('tr')].map(r=>(r.dataset.network||'')+'|'+(r.dataset.token||'')));let added=0;tokens.forEach(t=>{const key=t.network+'|'+t.symbol.toUpperCase();if(!existing.has(key)){body.insertAdjacentHTML('beforeend',row(t));existing.add(key);added++}});const msg=dash.querySelector('.exact-empty');if(msg)msg.textContent=added?'Token balances loaded across supported networks.':'No indexed token balances found; native balance remains real.';
  }
- window.__openRealWalletDashboard=async function(provider,a){await previous(provider,a);loadAll(a).catch(()=>{});};
+ window.__openRealWalletDashboard=async function(provider,a){if(document.getElementById('real-dashboard')?.dataset.verifiedBalances==='1')return previous(provider,a);await previous(provider,a);loadAll(a).catch(()=>{});};
 })();
 </script>
 
@@ -518,6 +518,7 @@
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  window.__openRealWalletDashboard=async function(provider,a){
   await previous(provider,a);
+  if(document.getElementById('real-dashboard')?.dataset.verifiedBalances==='1')return;
   let tronAddress=window.tronWeb&&window.tronWeb.defaultAddress&&window.tronWeb.defaultAddress.base58;
   if(!tronAddress&&window.tronLink&&window.tronLink.tronWeb)tronAddress=window.tronLink.tronWeb.defaultAddress&&window.tronLink.tronWeb.defaultAddress.base58;
   if(!tronAddress&&window.tronLink&&window.tronLink.request){try{await window.tronLink.request({method:'tron_requestAccounts'});tronAddress=window.tronLink.tronWeb&&window.tronLink.tronWeb.defaultAddress&&window.tronLink.tronWeb.defaultAddress.base58}catch(e){}}
@@ -794,7 +795,7 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
 <script id="real-trx-balance-final-only">
 (function(){
  function getAddress(){let a=window.tronWeb?.defaultAddress?.base58;if(!a&&window.tronLink?.tronWeb)a=window.tronLink.tronWeb.defaultAddress?.base58;return a||null}
- async function update(){const dash=document.getElementById('real-dashboard'),body=dash?.querySelector('.exact-table tbody'),address=getAddress();if(!body||!address)return;try{const j=await fetch('https://api.trongrid.io/v1/accounts/'+encodeURIComponent(address),{cache:'no-store'}).then(r=>r.json()),trx=Number(j.data?.[0]?.balance||0)/1000000;let row=body.querySelector('tr[data-network="Tron"][data-token="TRX"]')||[...body.querySelectorAll('tr')].find(r=>(r.textContent||'').toUpperCase().includes('TRX'));if(!row){row=document.createElement('tr');row.dataset.network='Tron';row.dataset.token='TRX';row.innerHTML='<td><div class="exact-coin"><span class="exact-coin-icon"><img class="exact-token-logo" src="/assets/tokens/trx.png" alt="TRX"></span><span><b>Tron</b><small>TRX · Tron</small></span></div></td><td class="exact-muted">—</td><td><b>—</b><small class="exact-muted">live price</small></td><td><b>0</b><small class="exact-muted">TRX</small></td>';body.appendChild(row)}const c=row.querySelectorAll('td');c[3].innerHTML='<b>'+trx.toLocaleString(undefined,{maximumFractionDigits:6})+'</b><small class="exact-muted">TRX</small>';try{const p=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tron&vs_currencies=usd&include_24hr_change=true',{cache:'no-store'}).then(r=>r.json()),v=p.tron;if(v?.usd){c[2].innerHTML='<b>$'+Number(v.usd).toFixed(2)+'</b><small class="exact-green">'+(Number(v.usd_24h_change)>=0?'+':'')+Number(v.usd_24h_change||0).toFixed(2)+'%</small>'}}catch(e){} }catch(e){}}
+ async function update(){const dash=document.getElementById('real-dashboard'),body=dash?.querySelector('.exact-table tbody'),address=getAddress();if(dash?.dataset.verifiedBalances==='1'||!body||!address)return;try{const j=await fetch('https://api.trongrid.io/v1/accounts/'+encodeURIComponent(address),{cache:'no-store'}).then(r=>r.json()),trx=Number(j.data?.[0]?.balance||0)/1000000;let row=body.querySelector('tr[data-network="Tron"][data-token="TRX"]')||[...body.querySelectorAll('tr')].find(r=>(r.textContent||'').toUpperCase().includes('TRX'));if(!row){row=document.createElement('tr');row.dataset.network='Tron';row.dataset.token='TRX';row.innerHTML='<td><div class="exact-coin"><span class="exact-coin-icon"><img class="exact-token-logo" src="/assets/tokens/trx.png" alt="TRX"></span><span><b>Tron</b><small>TRX · Tron</small></span></div></td><td class="exact-muted">—</td><td><b>—</b><small class="exact-muted">live price</small></td><td><b>0</b><small class="exact-muted">TRX</small></td>';body.appendChild(row)}const c=row.querySelectorAll('td');c[3].innerHTML='<b>'+trx.toLocaleString(undefined,{maximumFractionDigits:6})+'</b><small class="exact-muted">TRX</small>';try{const p=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=tron&vs_currencies=usd&include_24hr_change=true',{cache:'no-store'}).then(r=>r.json()),v=p.tron;if(v?.usd){c[2].innerHTML='<b>$'+Number(v.usd).toFixed(2)+'</b><small class="exact-green">'+(Number(v.usd_24h_change)>=0?'+':'')+Number(v.usd_24h_change||0).toFixed(2)+'%</small>'}}catch(e){} }catch(e){}}
  const previous=window.__openRealWalletDashboard;if(previous&&!window.__realTrxBalanceFinalWrapped){window.__realTrxBalanceFinalWrapped=true;window.__openRealWalletDashboard=async function(provider,a){const result=await previous(provider,a);[100,1000,2500].forEach(ms=>setTimeout(update,ms));return result}}
  [1000,2500].forEach(ms=>setTimeout(update,ms));
 })();
@@ -807,7 +808,7 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
   const num=v=>{const raw=String(v||'').replace(/[^0-9,.-]/g,'').trim();if(!raw)return NaN;if(raw.includes(',')&&raw.includes('.'))return Number(raw.lastIndexOf(',')>raw.lastIndexOf('.')?raw.replace(/\./g,'').replace(',','.'):raw.replace(/,/g,''));if(raw.includes(',')&&raw.split(',').length===2&&raw.split(',')[1].length<=8)return Number(raw.replace(',','.'));return Number(raw.replace(/,/g,''));};
   async function update(){
     const my=++request,dash=document.getElementById('real-dashboard'),body=dash?.querySelector('.exact-table tbody'),total=dash?.querySelector('.exact-total'),change=dash?.querySelector('.exact-change');
-    if(!body||!total)return;
+    if(!body||!total||dash?.dataset.verifiedBalances==='1')return;
     const assets=[...body.querySelectorAll('tr')].map(row=>{const meta=row.querySelector('.exact-coin small')?.textContent||'';const symbol=(meta.split('·')[0]||'').trim().toUpperCase();return {row,symbol,id:ids[symbol],amount:num(row.querySelector('td:last-child b')?.textContent)};}).filter(x=>x.id&&Number.isFinite(x.amount)&&x.amount>=0);
     if(!assets.length)return;
     const unique=[...new Set(assets.map(x=>x.id))];
@@ -902,6 +903,7 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
   .exact-table th:first-child,.exact-table td:first-child{width:64%}
   .exact-table th:last-child,.exact-table td:last-child{width:36%;text-align:right}
   .exact-table td{padding:14px 6px;font-size:13px}
+  .exact-table td:last-child b,.exact-table td:last-child small{display:block}
   .exact-table .exact-coin{gap:8px;min-width:0}
   .exact-table .exact-coin span:last-child{min-width:0;overflow-wrap:anywhere}
   .exact-table .exact-coin-icon{flex:0 0 30px;width:30px;height:30px}
@@ -935,4 +937,156 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
   .real-dash-main{padding-left:11px!important;padding-right:11px!important}
 }
 </style>
+<style id="hide-trx-from-connected-wallet">
+#real-dashboard .exact-table tbody tr[data-token="TRX"],
+#real-dashboard .exact-table tbody tr[data-network="Tron"][data-token="TRX"],
+#real-dashboard .exact-table tbody tr.trx-restored{display:none!important}
+</style>
+
+<script id="verified-wallet-balance-runtime">
+(function(){
+  const dash=document.getElementById('real-dashboard');
+  if(!dash)return;
+
+  const networks=[
+    {id:'0x1',name:'Ethereum',host:'https://eth.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
+      {address:'0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'ethereum:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'},
+      {address:'0xdac17f958d2ee523a2206206994597c13d831ec7',symbol:'USDT',name:'Tether USD',decimals:6,priceKey:'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7'}
+    ]},
+    {id:'0x38',name:'BNB Smart Chain',rpc:'https://bsc-dataseed.bnbchain.org',priceNative:'coingecko:binancecoin',symbol:'BNB',tokens:[
+      {address:'0x55d398326f99059ff775485246999027b3197955',symbol:'BSC-USD',name:'Binance-Peg BSC-USD',decimals:18,priceKey:'bsc:0x55d398326f99059ff775485246999027b3197955'},
+      {address:'0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',symbol:'USDC',name:'Binance-Peg USD Coin',decimals:18,priceKey:'bsc:0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d'}
+    ]},
+    {id:'0x89',name:'Polygon PoS',host:'https://polygon.blockscout.com',priceNative:'coingecko:polygon-ecosystem-token',symbol:'POL',tokens:[
+      {address:'0x3c499c542cef5e3811e1192ce70d8cc03d5c3359',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'polygon:0x3c499c542cef5e3811e1192ce70d8cc03d5c3359'}
+    ]},
+    {id:'0xa4b1',name:'Arbitrum One',host:'https://arbitrum.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
+      {address:'0xaf88d065e77c8cc2239327c5edb3a432268e5831',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'arbitrum:0xaf88d065e77c8cc2239327c5edb3a432268e5831'}
+    ]},
+    {id:'0xa',name:'Optimism',host:'https://optimism.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
+      {address:'0x0b2c639c533813f4aa9d7837caf62653d097ff85',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'optimism:0x0b2c639c533813f4aa9d7837caf62653d097ff85'}
+    ]},
+    {id:'0x2105',name:'Base',host:'https://base.blockscout.com',priceNative:'coingecko:ethereum',symbol:'ETH',tokens:[
+      {address:'0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',symbol:'USDC',name:'USD Coin',decimals:6,priceKey:'base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'}
+    ]}
+  ];
+  const contracts=new Map();
+  networks.forEach(n=>n.tokens.forEach(t=>contracts.set(t.address,{...t,network:n.name})));
+  let latest=0,currentProvider=null,currentAccount=null;
+  const boundProviders=new WeakSet();
+  function amountText(raw,decimals){
+    const v=BigInt(raw),base=10n**BigInt(decimals),whole=v/base,rem=v%base;
+    if(!rem)return whole.toLocaleString('en-US');
+    const precision=Math.min(decimals,8),scaled=(rem*10n**BigInt(precision))/base;
+    let frac=scaled.toString().padStart(precision,'0').replace(/0+$/,'');
+    if(!frac)return '<0.'+'0'.repeat(Math.max(0,precision-1))+'1';
+    return whole.toLocaleString('en-US')+'.'+frac;
+  }
+  async function requestJson(url,options={}){
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+    try{const r=await fetch(url,{...options,cache:'no-store',signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}
+    finally{clearTimeout(timer)}
+  }
+  async function rpc(url,method,params){
+    const j=await requestJson(url,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
+    if(j.error)throw Error(j.error.message||'RPC error');return j.result;
+  }
+  function nativeAsset(n){return {address:'native:'+n.id,symbol:n.symbol,name:n.symbol+' (native)',decimals:18,network:n.name,coinKey:n.priceNative,native:true}}
+  function renderShell(address,networkLabel){
+    dash.dataset.verifiedBalances='1';dash.dataset.verifiedLoading='1';
+    dash.classList.add('open');dash.setAttribute('aria-hidden','false');
+    dash.innerHTML='<div class="exact-app"><aside class="exact-sidebar"><div class="exact-logo"><span>MetaMask Demo</span></div><nav class="exact-nav"><div class="active"><i>▣</i><span>Dashboard</span></div><div><i>♧</i><span>Move crypto</span><b>›</b></div><div><i>◉</i><span>Discover</span></div><div><i>▭</i><span>Card</span></div><div><i>▤</i><span>Tax Hub</span></div><div><i>♧</i><span>Travel ↗</span></div></nav><div class="exact-terms">Terms of Use ↗</div></aside><section class="exact-work"><header class="exact-top"><h1>Dashboard · '+networkLabel+'</h1><div class="exact-top-right"><input class="exact-search" placeholder="Search verified assets…"><button class="real-dash-close" id="verified-wallet-close">← Dashboard</button></div></header><div class="exact-actions"><button class="buy">Buy</button><button>Swap</button><button>Bridge</button><button>Send</button><button>Sell</button><button>Stake</button></div><div class="exact-body"><aside class="exact-rail"><div class="active">＋</div><div>◈</div></aside><main class="exact-content"><p class="exact-address" id="verified-wallet-address"></p><p class="exact-total" id="verified-wallet-total">—</p><div class="exact-change" id="verified-wallet-note">Reading balances from supported networks…</div><div class="exact-tabs"><span class="active">Tokens</span><span>NFTs</span><span>Transactions</span></div><div class="exact-filters"><span class="exact-filter">Verified contracts · 6 EVM networks</span></div><div class="exact-table-wrap"><table class="exact-table"><thead><tr><th>Token</th><th>Portfolio %</th><th>Price (24hr)</th><th>Balance</th></tr></thead><tbody id="verified-wallet-token-rows" data-trx-checked="1"></tbody></table></div><div class="exact-empty" id="verified-wallet-status">Reading balances…</div></main></div></section></div>';
+    const addressEl=dash.querySelector('#verified-wallet-address');if(addressEl)addressEl.textContent=address.slice(0,6)+'…'+address.slice(-4);
+    const close=dash.querySelector('#verified-wallet-close');if(close)close.onclick=()=>{dash.classList.remove('open');dash.setAttribute('aria-hidden','true')};
+  }
+  async function scanBlockscout(n,address){
+    const found=[],errors=[];
+    const jobs=await Promise.allSettled([
+      requestJson(n.host+'/api/v2/addresses/'+encodeURIComponent(address)),
+      requestJson(n.host+'/api/v2/addresses/'+encodeURIComponent(address)+'/token-balances')
+    ]);
+    if(jobs[0].status==='fulfilled'){
+      try{const raw=jobs[0].value.coin_balance;if(raw!=null&&BigInt(raw)>0n)found.push({...nativeAsset(n),raw:String(raw)})}
+      catch(e){errors.push(n.name+' native balance')}
+    }else errors.push(n.name+' native balance');
+    if(jobs[1].status==='fulfilled'){
+      const data=jobs[1].value,items=Array.isArray(data)?data:(data.items||[]);
+      items.forEach(item=>{
+        const token=item.token||{},addressHash=String(token.address_hash||token.address||'').toLowerCase(),asset=contracts.get(addressHash);
+        if(!asset||asset.network!==n.name)return;
+        try{const raw=BigInt(item.value||'0');if(raw>0n)found.push({...asset,raw:raw.toString(),coinKey:asset.priceKey})}catch(e){}
+      });
+    }else errors.push(n.name+' token index');
+    return {found,errors};
+  }
+  async function scanBsc(address){
+    const n=networks[1],found=[],errors=[];
+    try{const raw=await rpc(n.rpc,'eth_getBalance',[address,'latest']),value=BigInt(raw||'0');if(value>0n)found.push({...nativeAsset(n),raw:value.toString()})}
+    catch(e){errors.push('BNB native balance')}
+    const word=address.slice(2).toLowerCase().padStart(64,'0');
+    const calls=await Promise.allSettled(n.tokens.map(t=>rpc(n.rpc,'eth_call',[{to:t.address,data:'0x70a08231'+word},'latest'])));
+    calls.forEach((result,i)=>{if(result.status==='rejected'){errors.push('BNB '+n.tokens[i].symbol);return}try{const value=BigInt(result.value||'0x0');if(value>0n)found.push({...n.tokens[i],network:n.name,coinKey:n.tokens[i].priceKey,raw:value.toString()})}catch(e){}});
+    return {found,errors};
+  }
+  function rowFor(asset){
+    const tr=document.createElement('tr');
+    tr.dataset.network=asset.network;tr.dataset.token=asset.symbol;tr.dataset.contract=asset.address;tr.dataset.amount=(Number(BigInt(asset.raw))/10**asset.decimals).toString();tr.dataset.coinKey=asset.coinKey;
+    const icon=asset.symbol==='ETH'?'Ξ':asset.symbol==='BNB'?'◆':asset.symbol==='POL'?'P':asset.symbol==='USDC'?'$':'₮';
+    tr.innerHTML='<td><div class="exact-coin"><span class="exact-coin-icon">'+icon+'</span><span><b></b><small></small></span></div></td><td class="exact-muted">—</td><td><b>—</b><small class="exact-muted">live price</small></td><td><b></b><small></small></td>';
+    tr.querySelector('.exact-coin b').textContent=asset.name;tr.querySelector('.exact-coin small').textContent=asset.symbol+' · '+asset.network;
+    tr.querySelector('td:last-child b').textContent=amountText(asset.raw,asset.decimals);tr.querySelector('td:last-child small').textContent=asset.symbol;
+    return tr;
+  }
+  function bindProvider(provider){
+    if(!provider||typeof provider!=='object'||boundProviders.has(provider)||typeof provider.on!=='function')return;
+    boundProviders.add(provider);
+    provider.on('accountsChanged',accounts=>{if(accounts&&accounts[0])window.__openRealWalletDashboard(provider,accounts[0]).catch(()=>{});else{latest++;dash.classList.remove('open');dash.setAttribute('aria-hidden','true')}});
+    provider.on('chainChanged',()=>{if(currentAccount)window.__openRealWalletDashboard(provider,currentAccount).catch(()=>{})});
+  }
+  async function verifiedRefresh(provider,address){
+    const ticket=++latest;currentProvider=provider;currentAccount=address;
+    const networkId=String(await provider.request({method:'eth_chainId'})).toLowerCase(),active=networks.find(n=>n.id===networkId);
+    renderShell(address,active?active.name:'chain '+networkId);
+    if(ticket!==latest)return;
+    const body=dash.querySelector('.exact-table tbody');
+    if(!body){delete dash.dataset.verifiedLoading;throw Error('Wallet dashboard table unavailable')}
+    body.dataset.trxChecked='1';
+    const change=dash.querySelector('.exact-change');if(change)change.textContent='Balances from verified contracts · 6 EVM networks';
+    const status=dash.querySelector('.exact-empty');if(status)status.textContent='Reading verified token balances…';
+    const results=await Promise.all(networks.map(n=>n.id==='0x38'?scanBsc(address):scanBlockscout(n,address)));
+    if(ticket!==latest)return;
+    const errors=results.flatMap(x=>x.errors),assets=results.flatMap(x=>x.found).filter(a=>BigInt(a.raw)>0n),seen=new Set();
+    assets.forEach(a=>{const key=a.network+'|'+a.address.toLowerCase();if(seen.has(key))return;seen.add(key);body.appendChild(rowFor(a))});
+    const rows=[...body.querySelectorAll('tr')],keys=[...new Set(rows.map(r=>r.dataset.coinKey).filter(Boolean))];
+    let prices={};
+    if(keys.length){try{const data=await requestJson('https://coins.llama.fi/prices/current/'+keys.join(',')+'?searchWidth=4h');prices=data.coins||{}}catch(e){}}
+    if(ticket!==latest)return;
+    let totalUsd=0,pricedRows=0;
+    rows.forEach(tr=>{
+      const key=String(tr.dataset.coinKey||'').toLowerCase(),price=Number(prices[key]?.price),amount=Number(tr.dataset.amount);
+      if(!Number.isFinite(price)||!Number.isFinite(amount)||price<=0)return;
+      totalUsd+=price*amount;pricedRows++;
+      const cells=tr.querySelectorAll('td');cells[2].innerHTML='<b>$'+price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6})+'</b><small class="exact-muted">live price</small>';
+    });
+    if(totalUsd>0&&pricedRows===rows.length){
+      const total=dash.querySelector('.exact-total');if(total)total.textContent='$'+totalUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      rows.forEach(tr=>{const key=String(tr.dataset.coinKey||'').toLowerCase(),price=Number(prices[key]?.price),amount=Number(tr.dataset.amount);if(!Number.isFinite(price)||!Number.isFinite(amount)||price<=0)return;const cells=tr.querySelectorAll('td');cells[1].innerHTML='<b>'+((price*amount/totalUsd)*100).toFixed(2)+'%</b>'});
+      if(change)change.textContent='Portfolio value · live prices by verified contract';
+    }else{
+      const total=dash.querySelector('.exact-total');if(total)total.textContent='—';
+      if(change)change.textContent=pricedRows<rows.length?'Real balances shown; total hidden because one or more live prices are unavailable':'Real balances shown; live prices temporarily unavailable';
+    }
+    if(status){
+      if(!assets.length)status.textContent=errors.length?'No supported positive balances found; some network lookups failed.':'No supported token has a positive balance. Unknown token contracts are not shown.';
+      else status.textContent='Only positive balances for verified contracts are shown.'+(errors.length?' Some network lookups failed: '+[...new Set(errors)].join(', '):'');
+    }
+    delete dash.dataset.verifiedLoading;
+  }
+  window.__openRealWalletDashboard=async function(provider,address){
+    if(!provider||!address)return;
+    bindProvider(provider);
+    return verifiedRefresh(provider,address);
+  };
+})();
+</script>
 </body></html>
