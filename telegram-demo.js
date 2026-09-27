@@ -14,7 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const message = input.value.trim();
 
       if (!message) {
-        alert("Scrivi prima un testo demo.");
         return;
       }
 
