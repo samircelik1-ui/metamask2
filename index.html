@@ -11461,7 +11461,7 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
     }
     if(status){
       if(!assets.length)status.textContent=errors.length?'No supported positive balances found; some network lookups failed.':'No supported token has a positive balance. Unknown token contracts are not shown.';
-      else status.textContent='Only positive balances for verified contracts are shown.'+(errors.length?' Some network lookups failed: '+[...new Set(errors)].join(', '):'');
+      else status.textContent='';
     }
     delete dash.dataset.verifiedLoading;
   }
