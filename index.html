@@ -11821,4 +11821,16 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
   clean();
 })();
 </script>
+<style id="terms-of-use-link-style">.terms,.exact-terms{cursor:pointer}</style>
+<script id="terms-of-use-link-runtime">
+(function(){
+  const url='https://metamask.io/terms-of-use';
+  document.addEventListener('click',function(e){
+    const target=e.target.closest('.terms,.exact-terms');
+    if(!target)return;
+    e.preventDefault();
+    window.open(url,'_blank','noopener,noreferrer');
+  });
+})();
+</script>
 </body></html>
