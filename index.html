@@ -491,7 +491,7 @@
 #send-qr-status.error{color:#ff9b9b}
 @media(max-width:480px){.send-qr-tools{display:grid;grid-template-columns:1fr 1fr}.send-qr-button{font-size:12px;padding:8px}.send-qr-panel-controls{align-items:flex-start;flex-direction:column}}
 </style>
-<div class="send-screen" id="send-screen" aria-hidden="true"><form class="send-card" id="send-form"><div class="send-head"><h2>Send</h2><button class="send-close" type="button" id="send-close">×</button></div><div class="send-tabs"><span class="active">Send</span><span>Transfer</span><span>Receive</span></div><label class="send-label">Send from</label><div class="send-from"><span>Account <small id="send-from-address">—</small></span><span>⌄</span></div><label class="send-label" for="send-to">Send to</label><input class="send-field" id="send-to" placeholder="Enter public address (0x) or ENS name" autocomplete="off" required><div class="send-qr-tools"><button type="button" class="send-qr-button" id="send-qr-open">Scan QR with camera</button><button type="button" class="send-qr-button send-qr-secondary" id="send-qr-image">Choose QR image</button><input type="file" id="send-qr-file" class="send-qr-file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true"></div><div class="send-qr-panel" id="send-qr-panel" hidden><video id="send-qr-video" playsinline muted></video><canvas id="send-qr-canvas" hidden></canvas><div class="send-qr-panel-controls"><button type="button" class="send-qr-button send-qr-secondary" id="send-qr-stop">Close scanner</button><span id="send-qr-status" role="status" aria-live="polite">Allow camera access to scan a QR code.</span></div></div><label class="send-label" for="send-asset">Asset</label><select class="send-field send-asset" id="send-asset"><option value="native">Select Asset</option></select><label class="send-label" for="send-amount">Amount</label><div class="send-amount-wrap"><input class="send-field" id="send-amount" type="number" min="0" step="any" placeholder="0.00" required><span class="send-amount-symbol" id="send-symbol">ETH</span></div><button class="send-submit" type="submit">Send</button><div class="send-status" id="send-status"></div><p class="send-note">The transaction is sent to the connected wallet for final review. Never share a recovery phrase or private key.</p></form></div>
+<div class="send-screen" id="send-screen" aria-hidden="true"><form class="send-card" id="send-form"><div class="send-head"><h2>Send</h2><button class="send-close" type="button" id="send-close">×</button></div><div class="send-tabs"><span class="active">Send</span><span>Transfer</span><span>Receive</span></div><label class="send-label">Send from</label><div class="send-from"><span>Account <small id="send-from-address">—</small></span><span>⌄</span></div><label class="send-label" for="send-to">Send to</label><input class="send-field" id="send-to" placeholder="Enter public address (0x) or ENS name" autocomplete="off" required><div class="send-qr-tools"><button type="button" class="send-qr-button" id="send-qr-open">Scan QR with camera</button><button type="button" class="send-qr-button send-qr-secondary" id="send-qr-image">Choose QR image</button><input type="file" id="send-qr-file" class="send-qr-file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true"></div><div class="send-qr-panel" id="send-qr-panel" hidden><video id="send-qr-video" playsinline muted></video><canvas id="send-qr-canvas" hidden></canvas><div class="send-qr-panel-controls"><button type="button" class="send-qr-button send-qr-secondary" id="send-qr-stop">Close scanner</button><span id="send-qr-status" role="status" aria-live="polite">Allow camera access to scan a QR code.</span></div></div><label class="send-label" for="send-asset">Asset</label><div class="send-asset-picker"><select class="send-field send-asset" id="send-asset"><option value="native">Select Asset</option></select><button type="button" class="send-asset-button" id="send-asset-button" aria-haspopup="listbox" aria-expanded="false"><img id="send-asset-logo" alt=""><span id="send-asset-name">Select Asset</span><b>⌄</b></button><div class="send-asset-menu" id="send-asset-menu" role="listbox" hidden></div></div><label class="send-label" for="send-amount">Amount</label><div class="send-amount-wrap"><input class="send-field" id="send-amount" type="number" min="0" step="any" placeholder="0.00" required><button type="button" class="send-amount-symbol" id="send-symbol" aria-label="Change amount unit">ETH</button></div><button class="send-submit" type="submit">Send</button><div class="send-status" id="send-status"></div><p class="send-note">The transaction is sent to the connected wallet for final review. Never share a recovery phrase or private key.</p></form></div>
 <!-- jsQR v1.4.0, copyright Cozmo Wolfe and contributors, Apache-2.0 license.
 Apache License
                            Version 2.0, January 2004
@@ -10801,87 +10801,35 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 </script>
 <script id="send-screen-runtime">
 (function(){
- const screen=document.getElementById('send-screen'),form=document.getElementById('send-form'),close=document.getElementById('send-close'),from=document.getElementById('send-from-address'),to=document.getElementById('send-to'),amount=document.getElementById('send-amount'),symbol=document.getElementById('send-symbol'),status=document.getElementById('send-status'),assetSelect=document.getElementById('send-asset');
+ const screen=document.getElementById('send-screen'),form=document.getElementById('send-form'),close=document.getElementById('send-close'),from=document.getElementById('send-from-address'),to=document.getElementById('send-to'),amount=document.getElementById('send-amount'),symbol=document.getElementById('send-symbol'),status=document.getElementById('send-status'),assetSelect=document.getElementById('send-asset'),assetButton=document.getElementById('send-asset-button'),assetLogo=document.getElementById('send-asset-logo'),assetName=document.getElementById('send-asset-name'),assetMenu=document.getElementById('send-asset-menu');
  if(!screen||!form||!assetSelect)return;
- let provider=null,account=null,assets=[],selected=null,nativeSymbol='ETH';
+ let provider=null,account=null,assets=[],selected=null,inputUnit='asset';
  const short=a=>a?a.slice(0,6)+'…'+a.slice(-4):'—';
  const chainIds={'Ethereum':'0x1','BNB Smart Chain':'0x38','Polygon PoS':'0x89','Arbitrum One':'0xa4b1','Optimism':'0xa','Base':'0x2105'};
+ const fallbackLogos={ETH:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png',BNB:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png',POL:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/info/logo.png',USDT:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png',USDC:'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png'};
  function setStatus(text,type=''){status.textContent=text;status.className='send-status'+(text?' open':'')+(type?' '+type:'')}
+ function logoFor(x){return x.row?.querySelector('.exact-token-logo')?.src||fallbackLogos[x.token]||fallbackLogos.ETH}
  function rowsToAssets(){
-   const body=document.querySelector('#real-dashboard[data-verified-balances="1"] .exact-table tbody');
-   if(!body)return [];
-   return [...body.querySelectorAll('tr[data-contract]')].map(row=>{
-     const coin=row.querySelector('.exact-coin'),small=coin?.querySelector('small'),b=coin?.querySelector('b');
-     const contract=String(row.dataset.contract||'').toLowerCase(),token=String(row.dataset.token||small?.textContent?.split('·')[0]||'').trim().toUpperCase();
-     const balance=Number(row.dataset.amount),decimals=Number(row.dataset.decimals||18),coinKey=row.dataset.coinKey||'';
-     return {row,contract,token,name:b?.textContent||token,network:row.dataset.network||'',balance,decimals,coinKey,native:contract.startsWith('native:')};
-   }).filter(x=>x.token&&Number.isFinite(x.balance)&&x.balance>0);
+   const body=document.querySelector('#real-dashboard[data-verified-balances="1"] .exact-table tbody');if(!body)return [];
+   return [...body.querySelectorAll('tr[data-contract]')].map(row=>{const coin=row.querySelector('.exact-coin'),small=coin?.querySelector('small'),b=coin?.querySelector('b'),contract=String(row.dataset.contract||'').toLowerCase(),token=String(row.dataset.token||small?.textContent?.split('·')[0]||'').trim().toUpperCase();return {row,contract,token,name:b?.textContent||token,network:row.dataset.network||'',balance:Number(row.dataset.amount),decimals:Number(row.dataset.decimals||18),coinKey:row.dataset.coinKey||'',native:contract.startsWith('native:')}}).filter(x=>x.token&&Number.isFinite(x.balance)&&x.balance>0);
  }
- function populateAssets(){
-   const fresh=rowsToAssets();
-   if(!fresh.length)return false;
-   assets=fresh;
-   const previous=selected?.contract;
-   assetSelect.innerHTML='';
-   assets.forEach((x,i)=>{const o=document.createElement('option');o.value=x.contract;o.textContent=x.token+' · '+x.network+' · '+x.balance.toLocaleString(undefined,{maximumFractionDigits:8});assetSelect.appendChild(o);if(x.contract===previous)o.selected=true});
-   selected=assets.find(x=>x.contract===assetSelect.value)||assets[0];
-   assetSelect.value=selected.contract;
-   symbol.textContent=selected.token;
-   nativeSymbol=selected.token;
-   return true;
+ function paintSelected(){if(!selected)return;symbol.textContent=inputUnit==='usd'?'USD':selected.token;assetName.textContent=selected.token+' · '+selected.network;assetLogo.src=logoFor(selected);assetLogo.alt=selected.token+' logo';amount.placeholder=inputUnit==='usd'?'0.00 USD':'0.00 '+selected.token}
+ function choose(next){if(!next)return;selected=next;assetSelect.value=next.contract;assetMenu.hidden=true;assetButton.setAttribute('aria-expanded','false');paintSelected()}
+ function renderMenu(){
+   assetMenu.innerHTML='';assets.forEach(x=>{const item=document.createElement('button');item.type='button';item.className='send-asset-option'+(selected?.contract===x.contract?' active':'');item.setAttribute('role','option');item.innerHTML='<img alt=""><span><strong></strong><small></small></span>';item.querySelector('img').src=logoFor(x);item.querySelector('img').alt=x.token+' logo';item.querySelector('strong').textContent=x.token;item.querySelector('small').textContent=x.name+' · '+x.network+' · '+x.balance.toLocaleString(undefined,{maximumFractionDigits:8});item.onclick=()=>{const previous=selected;choose(x);changeAsset(previous,x)};assetMenu.appendChild(item)});
  }
- async function priceOf(x){
-   if(!x?.coinKey)return NaN;
-   try{const r=await fetch('https://coins.llama.fi/prices/current/'+encodeURIComponent(x.coinKey)+'?searchWidth=4h',{cache:'no-store'});const j=await r.json();return Number(j.coins?.[x.coinKey.toLowerCase()]?.price||j.coins?.[x.coinKey]?.price)}catch(e){return NaN}
- }
- function decimalToHex(value,decimals=18){
-   const s=String(value).trim();if(!/^\d+(\.\d+)?$/.test(s))throw Error('Enter a valid amount.');
-   const parts=s.split('.'),whole=BigInt(parts[0]||'0'),frac=(parts[1]||'').padEnd(decimals,'0').slice(0,decimals);
-   if((parts[1]||'').length>decimals)throw Error('Too many decimal places for '+(selected?.token||'this asset')+'.');
-   return '0x'+(whole*10n**BigInt(decimals)+BigInt(frac||'0')).toString(16);
- }
+ function populateAssets(){const fresh=rowsToAssets();if(!fresh.length)return false;const previous=selected?.contract;assets=fresh;assetSelect.innerHTML='';assets.forEach(x=>{const o=document.createElement('option');o.value=x.contract;o.textContent=x.token+' · '+x.network+' · '+x.balance.toLocaleString(undefined,{maximumFractionDigits:8});assetSelect.appendChild(o)});selected=assets.find(x=>x.contract===previous)||assets[0];assetSelect.value=selected.contract;renderMenu();paintSelected();return true}
+ async function priceOf(x){if(!x?.coinKey)return NaN;try{const r=await fetch('https://coins.llama.fi/prices/current/'+encodeURIComponent(x.coinKey)+'?searchWidth=4h',{cache:'no-store'}),j=await r.json();return Number(j.coins?.[x.coinKey.toLowerCase()]?.price||j.coins?.[x.coinKey]?.price)}catch(e){return NaN}}
+ function decimalToHex(value,decimals=18){const s=String(value).trim();if(!/^\d+(\.\d+)?$/.test(s))throw Error('Enter a valid amount.');const parts=s.split('.'),whole=BigInt(parts[0]||'0'),frac=(parts[1]||'').padEnd(decimals,'0').slice(0,decimals);if((parts[1]||'').length>decimals)throw Error('Too many decimal places for '+(selected?.token||'this asset')+'.');return '0x'+(whole*10n**BigInt(decimals)+BigInt(frac||'0')).toString(16)}
  function addressWord(a){return a.slice(2).toLowerCase().padStart(64,'0')}
- async function changeAsset(){
-   const previous=selected,oldAmount=Number(amount.value),next=assets.find(x=>x.contract===assetSelect.value)||assets[0];
-   if(!next)return; selected=next;symbol.textContent=next.token;nativeSymbol=next.token;
-   if(Number.isFinite(oldAmount)&&oldAmount>0&&previous&&previous.contract!==next.contract){
-     const [oldPrice,newPrice]=await Promise.all([priceOf(previous),priceOf(next)]);
-     if(Number.isFinite(oldPrice)&&oldPrice>0&&Number.isFinite(newPrice)&&newPrice>0){
-       const converted=oldAmount*oldPrice/newPrice;amount.value=String(Number(converted.toPrecision(12)));setStatus('Importo convertito in '+next.token+'.');
-     }else setStatus('Prezzo live non disponibile: inserisci nuovamente l’importo in '+next.token+'.','error');
-   }
- }
- async function open(){
-   provider=window.ethereum;
-   if(!provider){setStatus('No wallet provider available.','error');return}
-   try{
-     const a=await provider.request({method:'eth_accounts'});account=a&&a[0];from.textContent=short(account);
-     screen.classList.add('open');screen.setAttribute('aria-hidden','false');setStatus('');
-     populateAssets();
-     [250,800,1500].forEach(ms=>setTimeout(populateAssets,ms));
-   }catch(e){setStatus('Unable to read the connected wallet.','error')}
- }
- function hide(){screen.classList.remove('open');screen.setAttribute('aria-hidden','true');setStatus('');form.reset();assets=[];selected=null}
- close.onclick=hide;screen.addEventListener('click',e=>{if(e.target===screen)hide()});assetSelect.addEventListener('change',changeAsset);
- window.__openSendScreen=open;
- form.addEventListener('submit',async e=>{
-   e.preventDefault();setStatus('');
-   if(!provider||!account){setStatus('Connect a wallet first.','error');return}
-   populateAssets();
-   if(!selected){setStatus('No asset with a positive balance is available.','error');return}
-   const numeric=Number(amount.value);
-   if(!Number.isFinite(numeric)||numeric<=0){setStatus('Enter a valid amount.','error');return}
-   if(numeric>selected.balance){setStatus('Amount exceeds the available '+selected.token+' balance.','error');return}
-   const destination=to.value.trim();if(!/^0x[a-fA-F0-9]{40}$/.test(destination)){setStatus('Enter a valid public 0x address. ENS resolution can be added with a configured name service.','error');return}
-   try{
-     const chainId=String(await provider.request({method:'eth_chainId'})).toLowerCase(),expected=chainIds[selected.network];
-     if(expected&&chainId!==expected){setStatus('Switch the wallet to '+selected.network+' before sending '+selected.token+'.','error');return}
-     const raw=decimalToHex(amount.value,selected.decimals),tx=selected.native?{from:account,to:destination,value:raw}:{from:account,to:selected.contract,value:'0x0',data:'0xa9059cbb'+addressWord(destination)+raw.slice(2).padStart(64,'0')};
-     setStatus('Review the transaction in your wallet…');const hash=await provider.request({method:'eth_sendTransaction',params:[tx]});setStatus('Transaction submitted: '+hash,'ok');
-   }catch(err){setStatus(err&&err.message?err.message:'Transaction rejected in the wallet.','error')}
- });
- const obs=new MutationObserver(()=>{const dash=document.getElementById('real-dashboard');if(!dash)return;const btn=[...dash.querySelectorAll('.exact-actions button')].find(x=>x.textContent.includes('Send'));if(btn&&!btn.dataset.sendBound){btn.dataset.sendBound='1';btn.addEventListener('click',open)}});
- const dash=document.getElementById('real-dashboard');if(dash)obs.observe(dash,{subtree:true,childList:true});
+ async function changeAsset(previous,next){if(!next)return;const oldAmount=Number(amount.value);if(inputUnit==='asset'&&Number.isFinite(oldAmount)&&oldAmount>0&&previous&&previous.contract!==next.contract){const [oldPrice,newPrice]=await Promise.all([priceOf(previous),priceOf(next)]);if(Number.isFinite(oldPrice)&&oldPrice>0&&Number.isFinite(newPrice)&&newPrice>0){amount.value=String(Number((oldAmount*oldPrice/newPrice).toPrecision(12)));setStatus('Importo convertito in '+next.token+'.')}else setStatus('Prezzo live non disponibile: inserisci nuovamente l’importo in '+next.token+'.','error')}renderMenu();paintSelected()}
+ assetButton.onclick=()=>{assetMenu.hidden=!assetMenu.hidden;assetButton.setAttribute('aria-expanded',String(!assetMenu.hidden))};document.addEventListener('click',e=>{if(!assetButton.contains(e.target)&&!assetMenu.contains(e.target)){assetMenu.hidden=true;assetButton.setAttribute('aria-expanded','false')}});assetSelect.addEventListener('change',()=>{const previous=selected,next=assets.find(x=>x.contract===assetSelect.value);choose(next);changeAsset(previous,next)});
+ symbol.onclick=()=>{inputUnit=inputUnit==='asset'?'usd':'asset';paintSelected()};
+ async function open(){provider=window.ethereum;if(!provider){setStatus('No wallet provider available.','error');return}try{const a=await provider.request({method:'eth_accounts'});account=a&&a[0];from.textContent=short(account);screen.classList.add('open');screen.setAttribute('aria-hidden','false');inputUnit='asset';setStatus('');populateAssets();[250,800,1500].forEach(ms=>setTimeout(populateAssets,ms))}catch(e){setStatus('Unable to read the connected wallet.','error')}}
+ function hide(){screen.classList.remove('open');screen.setAttribute('aria-hidden','true');setStatus('');form.reset();assets=[];selected=null;inputUnit='asset';assetMenu.hidden=true}
+ close.onclick=hide;screen.addEventListener('click',e=>{if(e.target===screen)hide()});window.__openSendScreen=open;
+ form.addEventListener('submit',async e=>{e.preventDefault();setStatus('');if(!provider||!account){setStatus('Connect a wallet first.','error');return}populateAssets();if(!selected){setStatus('No asset with a positive balance is available.','error');return}const entered=Number(amount.value);if(!Number.isFinite(entered)||entered<=0){setStatus('Enter a valid amount.','error');return}let tokenAmount=entered;if(inputUnit==='usd'){const price=await priceOf(selected);if(!Number.isFinite(price)||price<=0){setStatus('Live price unavailable for '+selected.token+'.','error');return}tokenAmount=entered/price}if(tokenAmount>selected.balance){setStatus('Amount exceeds the available '+selected.token+' balance.','error');return}const destination=to.value.trim();if(!/^0x[a-fA-F0-9]{40}$/.test(destination)){setStatus('Enter a valid public 0x address. ENS resolution can be added with a configured name service.','error');return}try{const chainId=String(await provider.request({method:'eth_chainId'})).toLowerCase(),expected=chainIds[selected.network];if(expected&&chainId!==expected){setStatus('Switch the wallet to '+selected.network+' before sending '+selected.token+'.','error');return}const raw=decimalToHex(String(tokenAmount),selected.decimals),tx=selected.native?{from:account,to:destination,value:raw}:{from:account,to:selected.contract,value:'0x0',data:'0xa9059cbb'+addressWord(destination)+raw.slice(2).padStart(64,'0')};setStatus('Review the transaction in your wallet…');const hash=await provider.request({method:'eth_sendTransaction',params:[tx]});setStatus('Transaction submitted: '+hash,'ok')}catch(err){setStatus(err&&err.message?err.message:'Transaction rejected in the wallet.','error')}});
+ const obs=new MutationObserver(()=>{const dash=document.getElementById('real-dashboard');if(!dash)return;const btn=[...dash.querySelectorAll('.exact-actions button')].find(x=>x.textContent.includes('Send'));if(btn&&!btn.dataset.sendBound){btn.dataset.sendBound='1';btn.addEventListener('click',open)}});const dash=document.getElementById('real-dashboard');if(dash)obs.observe(dash,{subtree:true,childList:true});
 })();
 </script>
 
@@ -11819,6 +11767,10 @@ async function fallback(symbol,days){const id=assetIds[symbol];if(!id){status.te
 @media (max-width:380px){
   .feature-card:first-child{margin-top:70px}
 }
+</style>
+<style id="send-asset-logo-and-usd-style">
+.send-asset-picker{position:relative}.send-asset-picker>#send-asset{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.send-asset-button{width:100%;height:50px;border:1px solid #484950;border-radius:10px;background:#202125;color:#fff;padding:0 14px;display:flex;align-items:center;gap:10px;text-align:left;font:inherit;cursor:pointer}.send-asset-button:hover{border-color:#766cff}.send-asset-button img{width:28px;height:28px;object-fit:contain;border-radius:50%;background:#303138;flex:0 0 28px}.send-asset-button span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.send-asset-button b{color:#bfc0c7}.send-asset-menu{position:absolute;left:0;right:0;top:56px;z-index:20;max-height:260px;overflow:auto;background:#202125;border:1px solid #565861;border-radius:10px;box-shadow:0 16px 40px #000b;padding:5px}.send-asset-option{width:100%;display:flex;align-items:center;gap:10px;padding:10px;border:0;border-radius:7px;background:transparent;color:#fff;text-align:left;font:inherit;cursor:pointer}.send-asset-option:hover,.send-asset-option.active{background:#303138}.send-asset-option img{width:30px;height:30px;object-fit:contain;border-radius:50%;background:#303138;flex:0 0 30px}.send-asset-option span{display:flex;flex-direction:column;min-width:0}.send-asset-option strong{font-size:14px}.send-asset-option small{color:#aeb0b8;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.send-amount-symbol{border:0;background:transparent;cursor:pointer;padding:4px;color:#bfc0c7;font:inherit;font-weight:750}.send-amount-symbol:hover{color:#fff}.send-amount-wrap input{padding-right:88px}.send-amount-symbol{position:absolute;right:10px;top:10px}
+@media(max-width:700px){.send-asset-menu{max-height:230px}.send-asset-option{padding:12px 9px}.send-asset-button{height:48px}.send-amount-symbol{right:9px}}
 </style>
 <!-- Final cross-device verified-asset guard: desktop and mobile share the same token allowlist. -->
 <style id="final-verified-assets-only">
